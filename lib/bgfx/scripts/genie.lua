@@ -154,6 +154,7 @@ solution "bgfx"
 BGFX_DIR   = path.getabsolute("..")
 BX_DIR     = os.getenv("BX_DIR")
 BIMG_DIR   = os.getenv("BIMG_DIR")
+BGFX_LIB_DIR = os.getenv("BGFX_LIB_DIR")
 
 local BGFX_BUILD_DIR = path.join(BGFX_DIR, ".build")
 local BGFX_THIRD_PARTY_DIR = path.join(BGFX_DIR, "3rdparty")
@@ -163,6 +164,10 @@ end
 
 if not BIMG_DIR then
 	BIMG_DIR = path.getabsolute(path.join(BGFX_DIR, "../bimg"))
+end
+
+if not BGFX_LIB_DIR then
+	BGFX_LIB_DIR = path.getabsolute(path.join(BGFX_DIR, "../bgfx-lib"))
 end
 
 if not os.isdir(BX_DIR) or not os.isdir(BIMG_DIR) then
@@ -517,6 +522,7 @@ dofile(path.join(BX_DIR,   "scripts/bx.lua"))
 dofile(path.join(BIMG_DIR, "scripts/bimg.lua"))
 dofile(path.join(BIMG_DIR, "scripts/bimg_decode.lua"))
 dofile "bgfx.lua"
+dofile(path.join(BGFX_LIB_DIR, "scripts/bgfx-lib.lua"))
 
 local function userdefines()
 	local defines = {}
