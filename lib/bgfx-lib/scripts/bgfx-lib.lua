@@ -10,6 +10,7 @@ project "bgfx-lib"
 		path.join(BX_DIR, "include"),
         path.join(BIMG_DIR, "include"),
 		path.join(BGFX_DIR, "include"),
+		path.join(BGFX_DIR, "3rdparty"),
 	}
 
 	files {
@@ -28,6 +29,16 @@ project "bgfx-lib"
 	configuration { "linux-*" }
 		buildoptions {
 			"-fPIC",
+		}
+
+	configuration { "Debug" }
+		defines {
+			"BX_CONFIG_DEBUG=1",
+		}
+
+	configuration { "Release" }
+		defines {
+			"BX_CONFIG_DEBUG=0",
 		}
 
 	configuration {}

@@ -1185,10 +1185,50 @@ namespace entry
 
 } // namespace entry
 
-int main(int _argc, const char* const* _argv)
-{
-	using namespace entry;
-	return s_ctx.run(_argc, _argv);
+// int main(int _argc, const char* const* _argv)
+// {
+// 	using namespace entry;
+// 	return s_ctx.run(_argc, _argv);
+// }
+
+typedef void(*main_callback_t)();
+main_callback_t main_callback = NULL;
+
+extern "C" void sa_set_main_callback(main_callback_t callback) {
+	main_callback = callback;
+}
+
+int _main_(int _argc, char** _argv) {
+	main_callback();
+
+    return 0;
+}
+
+extern "C" int sa_run(int argc, char** argv) {
+	return entry::s_ctx.run(argc, argv);
+}
+
+extern "C" void sa_init(int width, int height) {
+    bgfx::Init init;
+    init.type     = bgfx::RendererType::Direct3D11;
+    init.platformData.nwh  = entry::getNativeWindowHandle(entry::kDefaultWindowHandle);
+    init.platformData.ndt  = entry::getNativeDisplayHandle();
+    init.platformData.type = entry::getNativeWindowHandleType(entry::kDefaultWindowHandle);
+    init.resolution.width  = width;
+    init.resolution.height = height;
+    init.resolution.reset  = BGFX_RESET_VSYNC;
+    bool result = bgfx::init(init);
+
+    // Enable debug text.
+    bgfx::setDebug(BGFX_DEBUG_TEXT);
+
+    // // Set view 0 clear state.
+    bgfx::setViewClear(0
+        , BGFX_CLEAR_COLOR|BGFX_CLEAR_DEPTH
+        , 0x303030ff
+        , 1.0f
+        , 0
+        );
 }
 
 #endif // BX_PLATFORM_WINDOWS
