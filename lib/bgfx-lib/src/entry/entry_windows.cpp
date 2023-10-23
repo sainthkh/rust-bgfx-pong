@@ -1208,6 +1208,10 @@ extern "C" int sa_run(int argc, char** argv) {
 	return entry::s_ctx.run(argc, argv);
 }
 
+extern "C" bool sa_process_events(uint32_t width, uint32_t height, uint32_t debug, uint32_t reset, entry::MouseState mouse) {
+	return entry::processEvents(width, height, debug, reset, &mouse);
+}
+
 extern "C" void sa_init(int width, int height) {
     bgfx::Init init;
     init.type     = bgfx::RendererType::Direct3D11;
@@ -1229,6 +1233,10 @@ extern "C" void sa_init(int width, int height) {
         , 1.0f
         , 0
         );
+}
+
+extern "C" void sa_touch(bgfx::ViewId id) {
+	bgfx::touch(id);
 }
 
 #endif // BX_PLATFORM_WINDOWS
