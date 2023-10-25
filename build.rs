@@ -61,6 +61,7 @@ fn build_msvc(bitness: u32) {
 
     println!("cargo:rustc-link-lib=static=bxRelease");
     println!("cargo:rustc-link-lib=static=bimgRelease");
+    println!("cargo:rustc-link-lib=static=bimg_decodeRelease");
     println!("cargo:rustc-link-lib=static=bgfxRelease");
     println!("cargo:rustc-link-lib=static=bgfx-libRelease");
     println!("cargo:rustc-link-lib=gdi32");

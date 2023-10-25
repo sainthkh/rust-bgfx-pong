@@ -14,6 +14,10 @@ project "bgfx-lib"
 	}
 
 	files {
+		path.join(BGFX_DIR, "3rdparty/meshoptimizer/src/**.cpp"),
+		path.join(BGFX_DIR, "3rdparty/meshoptimizer/src/**.h"),
+		path.join(BGFX_DIR, "3rdparty/dear-imgui/**.cpp"),
+		path.join(BGFX_DIR, "3rdparty/dear-imgui/**.h"),
 		path.join(BGFX_LIB_DIR, "src/**.h"),
 		path.join(BGFX_LIB_DIR, "src/**.cpp"),
         path.join(BGFX_LIB_DIR, "src/**/*.h"),

@@ -25,6 +25,8 @@
 #include <xinput.h>
 #include <shellapi.h>
 
+#include "../bgfx_utils.h"
+
 #ifndef XINPUT_GAMEPAD_GUIDE
 #	define XINPUT_GAMEPAD_GUIDE 0x400
 #endif // XINPUT_GAMEPAD_GUIDE
@@ -1237,6 +1239,26 @@ extern "C" void sa_init(int width, int height) {
 
 extern "C" void sa_touch(bgfx::ViewId id) {
 	bgfx::touch(id);
+}
+
+extern "C" bgfx::VertexBufferHandle sa_create_vertex_buffer(const void* _data, uint32_t size, const bgfx::VertexLayout* layout) {
+	return bgfx::createVertexBuffer(bgfx::makeRef(_data, size), *layout);
+}
+
+extern "C" bgfx::IndexBufferHandle sa_create_index_buffer(const void* _data, uint32_t size) {
+	return bgfx::createIndexBuffer(bgfx::makeRef(_data, size));
+}
+
+extern "C" int64_t sa_hp_counter() {
+	return bx::getHPCounter();
+}
+
+extern "C" int64_t sa_hp_frequency() {
+	return bx::getHPFrequency();
+}
+
+extern "C" bgfx::ProgramHandle load_program(const char* vs_name, const char* fs_name) {
+	return loadProgram(vs_name, fs_name);
 }
 
 #endif // BX_PLATFORM_WINDOWS

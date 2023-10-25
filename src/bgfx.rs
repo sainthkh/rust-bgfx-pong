@@ -2,6 +2,7 @@ extern crate libc;
 
 use libc::c_char;
 use libc::c_int;
+use libc::c_void;
 use std::ffi::CString;
 
 pub const BGFX_DEBUG_TEXT: u32 = 0x08;
@@ -38,6 +39,153 @@ impl MouseState {
     }
 }
 
+pub enum RendererType {
+    Noop,         
+    Agc,         
+    Direct3D9,    
+    Direct3D11,  
+    Direct3D12,  
+    Gnm,         
+    Metal,       
+    Nvn,         
+    OpenGLES,    
+    OpenGL,     
+    Vulkan,     
+    WebGPU,     
+
+    Count
+}
+
+#[derive(Copy, Clone)]
+#[repr(u16)]
+pub enum Attrib {
+    Position, 
+    Normal,   
+    Tangent,   
+    Bitangent, 
+    Color0,    
+    Color1,    
+    Color2,    
+    Color3,    
+    Indices,   
+    Weight,    
+    TexCoord0, 
+    TexCoord1, 
+    TexCoord2, 
+    TexCoord3, 
+    TexCoord4, 
+    TexCoord5, 
+    TexCoord6, 
+    TexCoord7,
+
+    Count,
+}
+
+#[derive(Copy, Clone)]
+pub enum AttribType {
+    Uint8,  
+    Uint10, 
+    Int16,  
+    Half,   
+    Float,  
+
+    Count
+}
+
+#[repr(C)]
+pub struct VertexLayout {
+    hash: u32,
+    stride: u16,
+    offset: [Attrib; 18],
+    attributes: [Attrib; 18],
+}
+
+impl VertexLayout {
+    pub fn new() -> VertexLayout {
+        VertexLayout {
+            hash: 0,
+            stride: 0,
+            offset: [Attrib::Position; 18],
+            attributes: [Attrib::Position; 18],
+        }
+    }
+
+    pub fn begin(&mut self) -> &mut Self {
+        unsafe {
+            bgfx_vertex_layout_begin(self as *mut _, 0);
+        }
+
+        self
+    }
+
+    pub fn add(&mut self, attrib: Attrib, num: u8, attrib_type: AttribType, normalized: bool) -> &mut Self {
+        unsafe {
+            bgfx_vertex_layout_add(self as *mut _, attrib, num, attrib_type as i32, normalized, false);
+        }
+
+        self
+    }
+
+    pub fn end(&mut self) -> &mut Self {
+        unsafe {
+            bgfx_vertex_layout_end(self as *mut _);
+        }
+
+        self
+    }
+}
+
+pub struct Timer {
+    offset: i64,
+}
+
+impl Timer {
+    pub fn new() -> Timer {
+        Timer {
+            offset: unsafe { sa_hp_counter() },
+        }
+    }
+
+    pub fn elapsed(&self) -> f32 {
+        let now = unsafe { sa_hp_counter() };
+        let freq = unsafe { sa_hp_frequency() };
+
+        ((now - self.offset) as f64 / freq as f64) as f32
+    }
+}
+
+#[repr(C)]
+pub struct Vec3 {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+}
+
+impl Vec3 {
+    pub fn new() -> Vec3 {
+        Vec3 {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        }
+    }
+}
+
+#[repr(C)]
+pub struct VertexBufferHandle {
+    idx: u16,
+}
+
+#[repr(C)]
+pub struct IndexBufferHandle {
+    idx: u16,
+}
+
+#[repr(C)]
+pub struct ProgramHandle {
+    idx: u16,
+}
+
 #[link(name = "bgfxRelease", kind = "static")]
 extern "C" {
     fn sa_init(width: i32, height: i32) -> ();
@@ -50,6 +198,19 @@ extern "C" {
     fn bgfx_dbg_text_printf(x: u16, y: u16, attr: u8, format: *const c_char) -> ();
     fn bgfx_frame(capture: bool) -> ();
     fn bgfx_shutdown() -> ();
+
+    fn bgfx_vertex_layout_begin(layout: *mut VertexLayout, renderer_type: i32) -> ();
+    fn bgfx_vertex_layout_add(layout: *mut VertexLayout, attrib: Attrib, num: u8, attrib_type: i32, normalized: bool, as_int: bool) -> ();
+    fn bgfx_vertex_layout_end(layout: *mut VertexLayout) -> ();
+
+    fn sa_create_vertex_buffer(data: *const c_void, size: u32, layout: *const VertexLayout) -> VertexBufferHandle;
+    fn sa_create_index_buffer(data: *const c_void, size: u32) -> IndexBufferHandle;
+
+    #[link_name = "load_program"]
+    fn bgfx_load_program(vs_name: *const c_char, fs_name: *const c_char) -> ProgramHandle;
+
+    fn sa_hp_counter() -> i64;
+    fn sa_hp_frequency() -> i64;
 }
 
 pub fn init(width: i32, height: i32) -> () {
@@ -115,5 +276,30 @@ pub fn frame(capture: bool) -> () {
 pub fn shutdown() {
     unsafe {
         bgfx_shutdown()
+    }
+}
+
+pub fn create_vertex_buffer<T>(data: &Vec<T>, layout: &VertexLayout) -> VertexBufferHandle {
+    let size = (data.len() * std::mem::size_of::<T>()) as u32;
+    
+    unsafe {
+        sa_create_vertex_buffer(data.as_ptr() as *const c_void, size, layout as *const VertexLayout)
+    }
+}
+
+pub fn create_index_buffer<T>(data: &Vec<T>) -> IndexBufferHandle {
+    let size = (data.len() * std::mem::size_of::<T>()) as u32;
+    
+    unsafe {
+        sa_create_index_buffer(data.as_ptr() as *const c_void, size)
+    }
+}
+
+pub fn load_program(vs_name: &str, fs_name: &str) -> ProgramHandle {
+    let c_vs_name = CString::new(vs_name).unwrap();
+    let c_fs_name = CString::new(fs_name).unwrap();
+
+    unsafe {
+        bgfx_load_program(c_vs_name.as_ptr() as *const c_char, c_fs_name.as_ptr() as *const c_char)
     }
 }
