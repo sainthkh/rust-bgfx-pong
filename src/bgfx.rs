@@ -9,6 +9,15 @@ pub const BGFX_DEBUG_TEXT: u32 = 0x08;
 
 pub const BGFX_RESET_VSYNC: u32 = 0x80;
 
+pub const BGFX_STATE_WRITE_R: u64 =  0x0000000000000001;
+pub const BGFX_STATE_WRITE_G: u64 =  0x0000000000000002;
+pub const BGFX_STATE_WRITE_B: u64 =  0x0000000000000004;
+pub const BGFX_STATE_WRITE_A: u64 =  0x0000000000000008;
+pub const BGFX_STATE_WRITE_Z: u64 = 0x0000004000000000;
+pub const BGFX_STATE_DEPTH_TEST_LESS: u64 = 0x0000000000000010;
+pub const BGFX_STATE_CULL_CW: u64 = 0x0000001000000000;
+pub const BGFX_STATE_MSAA: u64 = 0x0100000000000000;
+
 #[derive(Copy, Clone)]
 #[repr(u8)]
 pub enum MouseButton {
@@ -171,16 +180,19 @@ impl Vec3 {
     }
 }
 
+#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct VertexBufferHandle {
     idx: u16,
 }
 
+#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct IndexBufferHandle {
     idx: u16,
 }
 
+#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct ProgramHandle {
     idx: u16,
@@ -204,13 +216,25 @@ extern "C" {
     fn bgfx_vertex_layout_end(layout: *mut VertexLayout) -> ();
 
     fn sa_create_vertex_buffer(data: *const c_void, size: u32, layout: *const VertexLayout) -> VertexBufferHandle;
+    fn bgfx_set_vertex_buffer(stream: u8, handle: VertexBufferHandle) -> ();
     fn sa_create_index_buffer(data: *const c_void, size: u32) -> IndexBufferHandle;
+    fn bgfx_set_index_buffer(handle: IndexBufferHandle) -> ();
 
     #[link_name = "load_program"]
     fn bgfx_load_program(vs_name: *const c_char, fs_name: *const c_char) -> ProgramHandle;
 
     fn sa_hp_counter() -> i64;
     fn sa_hp_frequency() -> i64;
+
+    fn sa_mtx_lookat(result: *mut f32, eye: *const Vec3, at: *const Vec3) -> ();
+    fn sa_mtx_proj(result: *mut f32, fovy: f32, aspect: f32, near: f32, far: f32) -> ();
+    fn sa_mtx_rotate_xy(result: *mut f32, x: f32, y: f32) -> ();
+
+    fn bgfx_set_state(state: u64, rgba: u32) -> ();
+    fn bgfx_submit(id: u8, program: ProgramHandle, depth: u32, flags: u8) -> ();
+
+    fn bgfx_set_view_transform(id: u8, view: *const f32, proj: *const f32) -> ();
+    fn bgfx_set_transform(transform: *const f32, num: u16) -> ();
 }
 
 pub fn init(width: i32, height: i32) -> () {
@@ -287,11 +311,23 @@ pub fn create_vertex_buffer<T>(data: &Vec<T>, layout: &VertexLayout) -> VertexBu
     }
 }
 
+pub fn set_vertex_buffer(stream: u8, handle: &VertexBufferHandle) -> () {
+    unsafe {
+        bgfx_set_vertex_buffer(stream, handle.clone())
+    }
+}
+
 pub fn create_index_buffer<T>(data: &Vec<T>) -> IndexBufferHandle {
     let size = (data.len() * std::mem::size_of::<T>()) as u32;
     
     unsafe {
         sa_create_index_buffer(data.as_ptr() as *const c_void, size)
+    }
+}
+
+pub fn set_index_buffer(handle: &IndexBufferHandle) -> () {
+    unsafe {
+        bgfx_set_index_buffer(handle.clone())
     }
 }
 
@@ -301,5 +337,59 @@ pub fn load_program(vs_name: &str, fs_name: &str) -> ProgramHandle {
 
     unsafe {
         bgfx_load_program(c_vs_name.as_ptr() as *const c_char, c_fs_name.as_ptr() as *const c_char)
+    }
+}
+
+pub fn mtx_lookat(eye: &Vec3, at: &Vec3) -> [f32; 16] {
+    let mut result = [0.0f32; 16];
+
+    unsafe {
+        sa_mtx_lookat(result.as_mut_ptr(), eye as *const Vec3, at as *const Vec3)
+    }
+
+    result
+}
+
+pub fn mtx_proj(fovy: f32, aspect: f32, near: f32, far: f32) -> [f32; 16] {
+    let mut result = [0.0f32; 16];
+
+    unsafe {
+        sa_mtx_proj(result.as_mut_ptr(), fovy, aspect, near, far)
+    }
+
+    result
+}
+
+pub fn mtx_rotate_xy(x: f32, y: f32) -> [f32; 16] {
+    let mut result = [0.0f32; 16];
+
+    unsafe {
+        sa_mtx_rotate_xy(result.as_mut_ptr(), x, y)
+    }
+
+    result
+}
+
+pub fn set_view_transform(id: u8, view: &[f32; 16], proj: &[f32; 16]) -> () {
+    unsafe {
+        bgfx_set_view_transform(id, view.as_ptr(), proj.as_ptr())
+    }
+}
+
+pub fn set_transform(transform: &[f32; 16]) -> () {
+    unsafe {
+        bgfx_set_transform(transform.as_ptr(), 1)
+    }
+}
+
+pub fn set_state(state: u64) -> () {
+    unsafe {
+        bgfx_set_state(state, 0)
+    }
+}
+
+pub fn submit(id: u8, program: &ProgramHandle) -> () {
+    unsafe {
+        bgfx_submit(id, program.clone(), 0, 0xff)
     }
 }

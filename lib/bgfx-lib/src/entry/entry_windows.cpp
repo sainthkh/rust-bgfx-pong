@@ -1261,4 +1261,16 @@ extern "C" bgfx::ProgramHandle load_program(const char* vs_name, const char* fs_
 	return loadProgram(vs_name, fs_name);
 }
 
+extern "C" void sa_mtx_lookat(float* result, const bx::Vec3* eye, const bx::Vec3* at) {
+	bx::mtxLookAt(result, *eye, *at);
+}
+
+extern "C" void sa_mtx_proj(float* result, float fov, float aspect, float _near, float _far) {
+	bx::mtxProj(result, fov, aspect, _near, _far, bgfx::getCaps()->homogeneousDepth);
+}
+
+extern "C" void sa_mtx_rotate_xy(float* result, float x, float y) {
+	bx::mtxRotateXY(result, x, y);
+}
+
 #endif // BX_PLATFORM_WINDOWS

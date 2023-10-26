@@ -58,13 +58,39 @@ extern fn callback() {
         let at = bgfx::Vec3 { x: 0.0, y: 0.0, z: 0.0 };
         let eye = bgfx::Vec3 { x: 0.0, y: 0.0, z: -35.0 };
 
+        let view = bgfx::mtx_lookat(&eye, &at);
+        let proj = bgfx::mtx_proj(60.0, 800.0 / 600.0, 0.1, 100.0);
+
+        bgfx::set_view_transform(0, &view, &proj);
+
         bgfx::set_view_rect(0, 0, 0, 800, 600);
 
         bgfx::touch(0);
 
-        bgfx::dbg_text_clear(0, false);
+        let state = 
+            bgfx::BGFX_STATE_WRITE_R |
+            bgfx::BGFX_STATE_WRITE_G |
+            bgfx::BGFX_STATE_WRITE_B |
+            bgfx::BGFX_STATE_WRITE_A |
+            bgfx::BGFX_STATE_WRITE_Z |
+            bgfx::BGFX_STATE_DEPTH_TEST_LESS |
+            bgfx::BGFX_STATE_CULL_CW |
+            bgfx::BGFX_STATE_MSAA;
 
-        bgfx::dbg_text_printf(0, 1, 0x0f, "Hello World!");
+        let mtx = bgfx::mtx_rotate_xy(0f32, 0f32);
+
+        bgfx::set_transform(&mtx);
+
+        bgfx::set_vertex_buffer(0, &vbh);
+        bgfx::set_index_buffer(&ibh);
+
+        bgfx::set_state(state);
+
+        bgfx::submit(0, &program);
+
+        // bgfx::dbg_text_clear(0, false);
+
+        // bgfx::dbg_text_printf(0, 1, 0x0f, "Hello World!");
 
         bgfx::frame(false);
     }
